@@ -366,8 +366,8 @@ var EX=[
 var workoutExs=[], roundData={}, workoutQueue=[];
 var qIdx=0, elapsed=0, paused=false, activeWo=false, timerInt=null;
 var libCat='all', miniCat='all', search='', builderTab='exercises';
-var history=[], saved=[];
-try{history=JSON.parse(localStorage.getItem('ib_hist')||'[]');}catch(e){}
+var workoutHistory=[], saved=[];
+try{workoutHistory=JSON.parse(localStorage.getItem('ib_hist')||'[]');}catch(e){}
 try{saved=JSON.parse(localStorage.getItem('ib_saved')||'[]');}catch(e){}
 
 function g(id){return document.getElementById(id);}
@@ -609,12 +609,10 @@ function renderQueue(){
 }
 
 function nextEx(){
-  try {
-    qIdx++;
-    if(qIdx>=workoutQueue.length){ finishWorkout(); return; }
-    renderQueue();
-    loadCurEx();
-  } catch(err) { alert('nextEx error: '+err.message); }
+  qIdx++;
+  if(qIdx>=workoutQueue.length){ finishWorkout(); return; }
+  renderQueue();
+  loadCurEx();
 }
 
 function startTimer(){
@@ -629,44 +627,39 @@ function togglePause(){
   g('pausedBanner').style.display=paused?'block':'none';
 }
 function endWorkout(){
-  try {
-    clearInterval(timerInt);
-    activeWo=false;
-    paused=false;
-    g('liveDot').style.display='none';
-    saveToHistory();
-    workoutQueue=[];
-    g('pausedBanner').style.display='none';
-    g('pauseBtn').textContent='Pause';
-    showTab('history');
-  } catch(err) { alert('endWorkout error: '+err.message); }
+  clearInterval(timerInt);
+  activeWo=false; paused=false;
+  g('liveDot').style.display='none';
+  saveToHistory();
+  workoutQueue=[];
+  g('pausedBanner').style.display='none';
+  g('pauseBtn').textContent='Pause';
+  showTab('history');
 }
 function saveToHistory(){
   var exNames=workoutExs.map(function(e){return e.name;});
   var numRounds=workoutQueue.length?workoutQueue[workoutQueue.length-1].round:1;
   var entry={date:new Date().toLocaleString(),rounds:numRounds,duration:elapsed,exercises:exNames};
-  history.unshift(entry);
-  try{localStorage.setItem('ib_hist',JSON.stringify(history.slice(0,50)));}catch(e2){}
+  workoutHistory.unshift(entry);
+  try{localStorage.setItem('ib_hist',JSON.stringify(workoutHistory.slice(0,50)));}catch(e2){}
   renderHistory();
 }
 function finishWorkout(){
-  try {
-    clearInterval(timerInt);
-    activeWo=false;
-    g('liveDot').style.display='none';
-    g('woProgress').style.width='100%';
-    g('woPct').textContent='100%';
-    saveToHistory();
-    workoutQueue=[];
-    showTab('history');
-  } catch(err) { alert('finishWorkout error: '+err.message); }
+  clearInterval(timerInt);
+  activeWo=false;
+  g('liveDot').style.display='none';
+  g('woProgress').style.width='100%';
+  g('woPct').textContent='100%';
+  saveToHistory();
+  workoutQueue=[];
+  showTab('history');
 }
 
 /* ── HISTORY ── */
 function renderHistory(){
   var c=g('histList'); c.innerHTML='';
-  g('histEmpty').style.display=history.length?'none':'block';
-  history.forEach(function(h){
+  g('histEmpty').style.display=workoutHistory.length?'none':'block';
+  workoutHistory.forEach(function(h){
     var div=document.createElement('div'); div.className='hist-entry';
     div.innerHTML='<div class="hist-date">'+h.date+'</div><div class="hist-name">'+h.rounds+' rounds &middot; '+fmt(h.duration)+'</div><div class="hist-pills">'+h.exercises.map(function(n){return '<span class="hist-pill">'+n+'</span>';}).join('')+'</div>';
     c.appendChild(div);
