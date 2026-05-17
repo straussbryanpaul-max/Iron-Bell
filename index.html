@@ -609,10 +609,12 @@ function renderQueue(){
 }
 
 function nextEx(){
-  qIdx++;
-  if(qIdx>=workoutQueue.length){ finishWorkout(); return; }
-  renderQueue();
-  loadCurEx();
+  try {
+    qIdx++;
+    if(qIdx>=workoutQueue.length){ finishWorkout(); return; }
+    renderQueue();
+    loadCurEx();
+  } catch(err) { alert('nextEx error: '+err.message); }
 }
 
 function startTimer(){
@@ -627,15 +629,17 @@ function togglePause(){
   g('pausedBanner').style.display=paused?'block':'none';
 }
 function endWorkout(){
-  clearInterval(timerInt);
-  activeWo=false;
-  paused=false;
-  g('liveDot').style.display='none';
-  saveToHistory();
-  workoutQueue=[];
-  g('pausedBanner').style.display='none';
-  g('pauseBtn').textContent='Pause';
-  showTab('history');
+  try {
+    clearInterval(timerInt);
+    activeWo=false;
+    paused=false;
+    g('liveDot').style.display='none';
+    saveToHistory();
+    workoutQueue=[];
+    g('pausedBanner').style.display='none';
+    g('pauseBtn').textContent='Pause';
+    showTab('history');
+  } catch(err) { alert('endWorkout error: '+err.message); }
 }
 function saveToHistory(){
   var exNames=workoutExs.map(function(e){return e.name;});
@@ -646,14 +650,16 @@ function saveToHistory(){
   renderHistory();
 }
 function finishWorkout(){
-  clearInterval(timerInt);
-  activeWo=false;
-  g('liveDot').style.display='none';
-  g('woProgress').style.width='100%';
-  g('woPct').textContent='100%';
-  saveToHistory();
-  workoutQueue=[];
-  showTab('history');
+  try {
+    clearInterval(timerInt);
+    activeWo=false;
+    g('liveDot').style.display='none';
+    g('woProgress').style.width='100%';
+    g('woPct').textContent='100%';
+    saveToHistory();
+    workoutQueue=[];
+    showTab('history');
+  } catch(err) { alert('finishWorkout error: '+err.message); }
 }
 
 /* ── HISTORY ── */
