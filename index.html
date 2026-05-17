@@ -547,27 +547,45 @@ g('saveNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')doS
 
 /* ── START WORKOUT ── */
 function startWorkout(){
-  var rounds=getRounds(); workoutQueue=[];
-  for(var r=1;r<=rounds;r++) workoutExs.forEach(function(ex){ workoutQueue.push({round:r,id:ex.id,name:ex.name,cat:ex.cat,reps:getRD(r,ex.id,'reps'),weight:getRD(r,ex.id,'weight')}); });
+  if(!workoutExs.length){ alert('Add some exercises first!'); return; }
+  var rounds=getRounds();
+  workoutQueue=[];
+  for(var r=1;r<=rounds;r++){
+    workoutExs.forEach(function(ex){
+      workoutQueue.push({
+        round:r, id:ex.id, name:ex.name, cat:ex.cat,
+        reps:getRD(r,ex.id,'reps'), weight:getRD(r,ex.id,'weight')
+      });
+    });
+  }
   qIdx=0; elapsed=0; paused=false; activeWo=true;
-  g('woCurRounds').textContent=rounds;
+  g('liveDot').style.display='inline-block';
   g('pauseBtn').textContent='Pause';
   g('pausedBanner').style.display='none';
   showTab('workout');
-  renderQueue(); loadCurEx(); startTimer();
+  renderQueue();
+  loadCurEx();
+  startTimer();
 }
 
 function loadCurEx(){
-  if(qIdx>=workoutQueue.length){finishWorkout();return;}
+  if(qIdx>=workoutQueue.length){ finishWorkout(); return; }
   var item=workoutQueue[qIdx], col=catCol(item.cat);
   g('bigGif').src=GIFS[item.id]||'';
-  g('bigPill').textContent=CL[item.cat]; g('bigPill').style.cssText='background:'+col+'22;color:'+col+';border:1px solid '+col+'44';
-  g('curName').textContent=item.name; g('curMuscles').textContent=EX.find(function(e){return e.id===item.id;}).muscles||'';
-  g('statReps').textContent=item.reps; g('statWeight').textContent=item.weight+'kg';
+  g('bigPill').textContent=CL[item.cat];
+  g('bigPill').style.cssText='background:'+col+'22;color:'+col+';border:1px solid '+col+'44';
+  g('curName').textContent=item.name;
+  var exData=null; for(var i=0;i<EX.length;i++){if(EX[i].id===item.id){exData=EX[i];break;}}
+  g('curMuscles').textContent=exData?exData.muscles:'';
+  g('statReps').textContent=item.reps;
+  g('statWeight').textContent=item.weight+'kg';
   g('statExNum').textContent=(qIdx+1)+'/'+workoutQueue.length;
   g('woCurRound').textContent=item.round;
   g('woSub').textContent=(qIdx+1)+' of '+workoutQueue.length+' exercises';
-  g('woProgress').style.width=((qIdx/workoutQueue.length)*100)+'%';
+  // progress: complete means (qIdx+1)/total
+  var pct=Math.round(((qIdx+1)/workoutQueue.length)*100);
+  g('woProgress').style.width=pct+'%';
+  g('woPct').textContent=pct+'%';
   setTimeout(function(){var el=g('qi_'+qIdx); if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},100);
 }
 
@@ -577,16 +595,24 @@ function renderQueue(){
     var col=catCol(item.cat), showR=item.round!==lastRound;
     var div=document.createElement('div');
     div.className='q-item'+(i===qIdx?' cur':'')+(i<qIdx?' done':'');
-    div.id='qi_'+i; div.style.borderLeftColor=i===qIdx?col:'transparent'; div.style.background=i===qIdx?col+'08':'';
-    div.innerHTML='<div style="flex:1;min-width:0">'+(showR?'<div class="q-rlbl">Round '+item.round+'</div>':'')+'<div class="q-name">'+item.name+'</div></div><div class="q-meta">'+item.reps+'r<br>'+item.weight+'kg</div>';
-    (function(idx){div.addEventListener('click',function(){qIdx=idx;renderQueue();loadCurEx();});})(i);
-    list.appendChild(div); lastRound=item.round;
+    div.id='qi_'+i;
+    div.style.borderLeftColor=i===qIdx?col:'transparent';
+    div.style.background=i===qIdx?col+'08':'';
+    div.innerHTML='<div style="flex:1;min-width:0">'
+      +(showR?'<div class="q-rlbl">Round '+item.round+'</div>':'')
+      +'<div class="q-name">'+item.name+'</div></div>'
+      +'<div class="q-meta">'+item.reps+'r / '+item.weight+'kg</div>';
+    (function(idx){div.addEventListener('click',function(){ qIdx=idx; renderQueue(); loadCurEx(); });})(i);
+    list.appendChild(div);
+    lastRound=item.round;
   });
 }
 
 function nextEx(){
-  qIdx++; if(qIdx>=workoutQueue.length){finishWorkout();return;}
-  renderQueue(); loadCurEx();
+  qIdx++;
+  if(qIdx>=workoutQueue.length){ finishWorkout(); return; }
+  renderQueue();
+  loadCurEx();
 }
 
 function startTimer(){
@@ -601,21 +627,36 @@ function togglePause(){
   g('pausedBanner').style.display=paused?'block':'none';
 }
 function endWorkout(){
-  clearInterval(timerInt); activeWo=false; paused=false;
+  clearInterval(timerInt);
+  activeWo=false; paused=false;
+  g('liveDot').style.display='none';
   if(elapsed>0) saveToHistory();
   workoutQueue=[];
-  g('pausedBanner').style.display='none'; g('pauseBtn').textContent='Pause';
+  g('pausedBanner').style.display='none';
+  g('pauseBtn').textContent='Pause';
   showTab('builder'); showSubTab('workout'); renderRounds();
 }
 function saveToHistory(){
-  var entry={date:new Date().toLocaleString(),rounds:getRounds(),duration:elapsed,exercises:workoutExs.map(function(e){return e.name;})};
-  history.unshift(entry); try{localStorage.setItem('ib_hist',JSON.stringify(history.slice(0,50)));}catch(e){}
+  if(!workoutExs.length) return;
+  var entry={
+    date:new Date().toLocaleString(),
+    rounds:workoutQueue.length?workoutQueue[workoutQueue.length-1].round:1,
+    duration:elapsed,
+    exercises:workoutExs.map(function(e){return e.name;})
+  };
+  history.unshift(entry);
+  try{localStorage.setItem('ib_hist',JSON.stringify(history.slice(0,50)));}catch(e){}
   renderHistory();
 }
 function finishWorkout(){
-  clearInterval(timerInt); activeWo=false;
+  clearInterval(timerInt);
+  activeWo=false;
+  g('liveDot').style.display='none';
+  g('woProgress').style.width='100%';
+  g('woPct').textContent='100%';
   saveToHistory();
-  workoutQueue=[]; showTab('history');
+  workoutQueue=[];
+  setTimeout(function(){ showTab('history'); }, 800);
 }
 
 /* ── HISTORY ── */
