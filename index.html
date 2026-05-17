@@ -628,24 +628,21 @@ function togglePause(){
 }
 function endWorkout(){
   clearInterval(timerInt);
-  activeWo=false; paused=false;
+  activeWo=false;
+  paused=false;
   g('liveDot').style.display='none';
-  if(elapsed>0) saveToHistory();
+  saveToHistory();
   workoutQueue=[];
   g('pausedBanner').style.display='none';
   g('pauseBtn').textContent='Pause';
-  showTab('builder'); showSubTab('workout'); renderRounds();
+  showTab('history');
 }
 function saveToHistory(){
-  if(!workoutExs.length) return;
-  var entry={
-    date:new Date().toLocaleString(),
-    rounds:workoutQueue.length?workoutQueue[workoutQueue.length-1].round:1,
-    duration:elapsed,
-    exercises:workoutExs.map(function(e){return e.name;})
-  };
+  var exNames=workoutExs.map(function(e){return e.name;});
+  var numRounds=workoutQueue.length?workoutQueue[workoutQueue.length-1].round:1;
+  var entry={date:new Date().toLocaleString(),rounds:numRounds,duration:elapsed,exercises:exNames};
   history.unshift(entry);
-  try{localStorage.setItem('ib_hist',JSON.stringify(history.slice(0,50)));}catch(e){}
+  try{localStorage.setItem('ib_hist',JSON.stringify(history.slice(0,50)));}catch(e2){}
   renderHistory();
 }
 function finishWorkout(){
@@ -656,7 +653,7 @@ function finishWorkout(){
   g('woPct').textContent='100%';
   saveToHistory();
   workoutQueue=[];
-  setTimeout(function(){ showTab('history'); }, 800);
+  showTab('history');
 }
 
 /* ── HISTORY ── */
